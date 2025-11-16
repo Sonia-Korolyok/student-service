@@ -1,70 +1,51 @@
 
-import * as repo from "../repository/studentRepository.js";
+let collection;
 
-export const addStudent = async (req, res) => {
-    const success = await repo.addStudent(req.body);
-    if (success) {
-        res.status(204).send();
-    } else {
-        res.status(409).send();
+export const init = db => collection = db.collection('college');
+
+export const addStudent = async ({id, name, password}) => {
+    const existingStudent = await collection.findOne({_id: id});
+    if (existingStudent) {
+        return false;
     }
+    await collection.insertOne({_id: id, name, password, scores: {}});
+    return true;
 }
 
-export const findStudent = async (req, res) => {
-    const student = await repo.findStudent(+req.params.id);
-    if (student) {
-        const {password, ...studentWithoutPassword} = student;
-        res.json(studentWithoutPassword);
-    } else {
-        res.status(404).send();
-    }
+export const findStudent = async id => {
+    return await collection.findOne({_id: id});
 }
 
-export const updateStudent = async (req, res) => {
-    const student = await repo.updateStudent(+req.params.id, req.body);
-    if (student) {
-        const {scores, ...studentWithoutScores} = student;
-        res.json(studentWithoutScores);
-    } else {
-        res.status(404).send();
-    }
+export const deleteStudent = async id => {
+    return await collection.findOneAndDelete({_id: id});
 }
 
-export const deleteStudent =  async (req, res) => {
-    const student = await repo.deleteStudent(+req.params.id);
-    if (student) {
-        const {password, ...studentWithoutPassword} = student;
-        res.json(studentWithoutPassword);
-    } else {
-        res.status(404).send();
-    }
+export const updateStudent = async (id, data) => {
+    return await collection.findOneAndUpdate(
+        {_id: id},
+        {$set: data},
+        {returnDocument: 'after'}
+    );
 }
 
-export const addScore = async (req, res) => {
-    const success = await repo.addScore(+req.params.id, req.body.examName, +req.body.score);
-    if (success) {
-        res.status(204).send();
-    } else {
-        res.status(404).send();
-    }
+export const addScore = async (id, exam, score) => {
+    return await collection.findOneAndUpdate(
+        {_id: id},
+        {$set: {[`scores.${exam}`]: score}}
+    )
 }
 
-export const findByName = async (req, res) => {
-    const students = await repo.findByName(req.params.name);
-    const studentsWithoutPasswords = students.map(student => ({...student, password: undefined}))
-    res.json(studentsWithoutPasswords);
+export const findByName = async (name) => {
+    return await collection.find({name: {$regex: `^${name}$`, $options: 'i'}}).toArray();
 }
 
-export const countByNames = async (req, res) => {
-    const names = req.query.names;
-    //const list = [].concat(names ?? '');
-    const list = Array.isArray(names) ? names : [names ?? ''];
-    const count = await repo.countByNames(list);
-    res.json(count);
+export const countByNames = async (names) => {
+    const regexConditions = names.map(name => ({
+        name: {$regex: `^${name}$`, $options: 'i'}
+    }));
+    return await collection.countDocuments({$or: regexConditions});
 }
 
-export const findByMinScore = async (req, res) => {
-    const students = await repo.findByMinScore(req.params.exam, +req.params.minScore);
-    const studentsWithoutPasswords = students.map(student => ({...student, password: undefined}))
-    res.json(studentsWithoutPasswords);
+export const findByMinScore = async (exam, minScore) => {
+    return await collection.find({[`scores.${exam}`]: {$gte: minScore}}).toArray();
 }
