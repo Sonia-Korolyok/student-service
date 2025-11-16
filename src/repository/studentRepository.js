@@ -36,8 +36,8 @@ export const findByName = async (name) => {
     return await collection.find({name: name}).toArray();
 }
 
-export const countByNames = async () => {
-    return await collection.countDocuments({});
+export const countByNames = async (names) => {
+    return await collection.countDocuments({name: { $in: names }});
 }
 
 export const findByMinScore = async (exam, minScore) => {
