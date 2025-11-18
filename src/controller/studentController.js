@@ -1,51 +1,67 @@
+import * as service from '../service/studentService.js';
+import {scoreSchema, studentSchema, updateStudentSchema} from "../validator/student validator.js";
 
-let collection;
-
-export const init = db => collection = db.collection('college');
-
-export const addStudent = async ({id, name, password}) => {
-    const existingStudent = await collection.findOne({_id: id});
-    if (existingStudent) {
-        return false;
+export const addStudent = async (req, res) => {
+    const {error} = studentSchema.validate(req.body);
+    if (error) {
+        return res.status(400).json({error: error.details[0].message});
     }
-    await collection.insertOne({_id: id, name, password, scores: {}});
-    return true;
+    const success = await service.addStudent(req.body);
+    res.sendStatus(success ? 201 : 409)
 }
 
-export const findStudent = async id => {
-    return await collection.findOne({_id: id});
+export const findStudent = async (req, res) => {
+    const student = await service.findStudent(+req.params.id);
+    if (student) {
+        res.json(student);
+    } else {
+        res.status(404).send();
+    }
 }
 
-export const deleteStudent = async id => {
-    return await collection.findOneAndDelete({_id: id});
+export const updateStudent = async (req, res) => {
+    const {error} = updateStudentSchema.validate(req.body);
+    if (error) {
+        return res.status(400).send({error: error.details[0].message});
+    }
+    const student = await service.updateStudent(+req.params.id, req.body);
+    if (student) {
+        res.json(student);
+    } else {
+        res.status(404).send();
+    }
 }
 
-export const updateStudent = async (id, data) => {
-    return await collection.findOneAndUpdate(
-        {_id: id},
-        {$set: data},
-        {returnDocument: 'after'}
-    );
+export const deleteStudent = async (req, res) => {
+    const student = await service.deleteStudent(+req.params.id);
+   if (student) {
+       res.json(student);
+   }else {
+       res.status(404).send();
+   }
 }
 
-export const addScore = async (id, exam, score) => {
-    return await collection.findOneAndUpdate(
-        {_id: id},
-        {$set: {[`scores.${exam}`]: score}}
-    )
+export const addScore = async (req, res) => {
+    const {error} = scoreSchema.validate(req.body);
+    if (error) {
+        return res.status(400).send({error: error.details[0].message});
+    }
+    const success = await service.addScore(+req.params.id, req.body.examName, +req.body.score);
+    res.sendStatus(success ? 204 : 404)
 }
 
-export const findByName = async (name) => {
-    return await collection.find({name: {$regex: `^${name}$`, $options: 'i'}}).toArray();
+export const findByName = async (req, res) => {
+    const students = await service.findByName(req.params.name);
+    res.json(students);
 }
 
-export const countByNames = async (names) => {
-    const regexConditions = names.map(name => ({
-        name: {$regex: `^${name}$`, $options: 'i'}
-    }));
-    return await collection.countDocuments({$or: regexConditions});
+export const countByNames = async (req, res) => {
+    const names = Array.isArray(req.query.names) ? req.query.names : [req.query.names];
+    const count = await service.countByNames(names);
+    res.json(count)
 }
 
-export const findByMinScore = async (exam, minScore) => {
-    return await collection.find({[`scores.${exam}`]: {$gte: minScore}}).toArray();
+export const findByMinScore = async (req, res) => {
+    const students = await service.findByMinScore(req.params.exam, +req.params.minScore);
+    res.json(students);
 }
