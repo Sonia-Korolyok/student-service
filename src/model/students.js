@@ -17,12 +17,11 @@ const studentSchema = new mongoose.Schema({
             transform: (doc, ret) => {
                 const id = ret._id.toString();
                 delete ret._id;
-                delete ret.password;
                 return { id, ...ret };
             }
         }
     }
 )
 
-const Student = mongoose.model('Student', studentSchema, 'college');
+const Student = mongoose.model('Student', studentSchema, 'students');
 export default Student;
