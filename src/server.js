@@ -3,7 +3,7 @@ import express from 'express';
 import studentRouter from './routes/studentsRoutes.js';
 import mongoose from 'mongoose';
 
-dotenv.config();
+dotenv.config({path: '../.env'});
 const port = process.env.PORT || 3000;
 const app = express();
 

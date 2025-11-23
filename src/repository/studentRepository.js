@@ -32,4 +32,3 @@ export function countStudentsByName(names) {
 export function findStudentsByMinScores(exam, minScore) {
     return Student.find({[`scores.${exam}`]: {$gte: minScore}});
 }
-
