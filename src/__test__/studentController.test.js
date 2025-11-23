@@ -75,6 +75,9 @@ describe('Student Controller Integration Tests', () => {
       expect(student).not.toBeNull();
       expect(student.name).toBe('John Doe');
       expect(student.password).toBe('password123');
+      expect(response.statusCode).toBe(201);
+      expect(response.body).toEqual({});
+
     });
 
     test('should return 400 with invalid data (missing required fields)', async () => {
